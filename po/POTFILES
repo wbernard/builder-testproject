@@ -1,0 +1,7 @@
+data/im.bernard.original.desktop.in
+data/im.bernard.original.appdata.xml.in
+data/im.bernard.original.gschema.xml
+src/window.ui
+src/main.py
+src/window.py
+
