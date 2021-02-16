@@ -64,7 +64,7 @@ class OriginalWindow(Gtk.ApplicationWindow):
     def onButtonPress(self, event, widget):
         print ("Bonege!")
 
-    def einVierQuad(self, event, widget):
+    def einVierQuad(self, widget):
         if self.quadra == 2:
             self.quadra = 8
         elif self.quadra == 8:
@@ -72,28 +72,28 @@ class OriginalWindow(Gtk.ApplicationWindow):
         else:
             print ("self.quadra muss 2 oder 8 sein!")
 
+        print ("quadranten", self.quadra)
+
+        self.neuStart(widget)
+
     def neuStart(self, widget):
         sb = self.surface.get_width()
         sh = self.surface.get_height()
-        print("sh, sb", sh, sb)
+        #print("neush, sb", sh, sb)
         self.cr.rectangle(0, 0, sb, sh)  # x, y, width, height
         self.cr.set_operator(0);
         self.cr.fill()
-        print("sh, sb", sh, sb)
+        #print("ne2sh, sb", sh, sb)
 
         self.cr.set_operator(1)
         self.linio(0, pha, sb, pha) # zeichnet die horizontale Achse
         self.linio(pva, 0, pva, sh)
-        print("sh, sb", sh, sb)
+        #print("pha, pva", sh, sb)
 
-        self.drawArea.queue_draw()
+        #self.drawArea.queue_draw()
 
 
     def zeigeKoord (self, area, eve):
-        aw = area.get_allocated_width()   #liest die aktuellen Abmessungen des Fensters ein
-        ah = area.get_allocated_height()
-
-        self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, aw, ah)
 
         sb = self.surface.get_width()
         sh = self.surface.get_height()
@@ -102,7 +102,7 @@ class OriginalWindow(Gtk.ApplicationWindow):
         x = int(x1-pva)         # x und y sind die Koordinaten im Aschsenkreuz der Zeichenebene
         y = int(-y1+pha)
         text = "(x = " + str(x) + ", y = " + str(y) + ")"
-        print (text)
+        #print (text)
 
         self.anZeige.set_text(text)
 
@@ -112,15 +112,13 @@ class OriginalWindow(Gtk.ApplicationWindow):
 
         _surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, ab, ah)
 
-        # wenn das Fenster verändert wird, wird die Zeicchenebene angepasst
+        # wenn das Fenster verändert wird, wird die Zeichenebene angepasst
         if self.surface is not None:
             global sb, sh
             sb = self.surface.get_width()
             sh = self.surface.get_height()
 
-            global pva, pha         # Position der vertikalen/horizontalen Achse
-            pva = sb/self.quadra
-            pha = sh - sh/self.quadra
+
 
             # bei Verkleinerung bleibt die alte Zeichenebene
             if ab < sb and ah < sh:
@@ -158,6 +156,10 @@ class OriginalWindow(Gtk.ApplicationWindow):
             sb = self.surface.get_width()
             sh = self.surface.get_height()
 
+            global pva, pha         # Position der vertikalen/horizontalen Achse
+            pva = sb/self.quadra
+            pha = sh - sh/self.quadra
+
             #print ("ab", ab, ah)
             #print ("sb", sb, sh)
             # bei Verkleinerung bleibt die alte Zeichenebene
@@ -165,7 +167,7 @@ class OriginalWindow(Gtk.ApplicationWindow):
                 return False
 
             if self.zeichneneu:
-                print ("1pva =", pva, "pha =", pha)
+                print ("2pva =", pva, "pha =", pha)
 
                 self.cr.rectangle(0, 0, sb, sh)  # x, y, width, height
                 self.cr.set_operator(0);
@@ -174,7 +176,7 @@ class OriginalWindow(Gtk.ApplicationWindow):
                 self.linio(0, pha, sb, pha) # zeichnet die horizontale Achse
                 self.linio(pva, 0, pva, sh)
 
-                self.zeichneneu = False
+                #self.zeichneneu = False
 
         else:
             print ("Keine Infos über die Zeichenebene ...")
