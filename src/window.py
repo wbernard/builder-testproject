@@ -21,6 +21,7 @@ import cairo
 import math
 import os, threading, time, datetime
 import numpy as np
+import scipy as sp
 
 # Gtk Imports
 
