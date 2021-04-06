@@ -21,7 +21,7 @@ import cairo
 import math
 import os, threading, time, datetime
 import numpy as np
-import scipy as sp
+from scipy.optimize import curve_fit
 
 # Gtk Imports
 
@@ -59,6 +59,7 @@ class OriginalWindow(Gtk.ApplicationWindow):
     quadranten1   = Gtk.Template.Child()
     quadranten2   = Gtk.Template.Child()
     menuKnopf     = Gtk.Template.Child()
+    exponential   = Gtk.Template.Child()
 
 
     def __init__(self, **kwargs):
@@ -78,8 +79,9 @@ class OriginalWindow(Gtk.ApplicationWindow):
         self.neustart.connect('clicked', self.neuStart)
         self.quadranten1.connect('clicked', self.einVierQuad, "1")
         self.quadranten2.connect('clicked', self.einVierQuad, "2")
+        self.exponential.connect('clicked', self.zeichneExpoKurve)
 
-        self.linfarb     = [[0,0,0.5], [0.5,0,0.5],[0,0.5,0.5], [0.5,0,0], [0.5,0.5,0], [0,1,0] ]
+        self.linfarb     = [[0,0,0.5], [0.5,0,0.5],[0,0.5,0.5], [0.5,0,0], [0.5,0.5,0], [0,1,0], [0,1,0] ]
         self.zeichneneu  = True
         self.quadra      = 8
         self.typ         = 0
@@ -476,6 +478,50 @@ class OriginalWindow(Gtk.ApplicationWindow):
             self.displayMessage(self.success, "Mindestens vier Punkte!")
         elif len(self.punkte) >= 4:
             self.berechneZeichne(pva, pha)
+
+    def zeichneExpoKurve(self, widget):
+        self.typ = 7
+        n = len(self.punkte)
+        xp = []
+        yp = []
+
+        for i in range(n):
+            xp.append(self.punkte[i][0])
+            yp.append(self.punkte[i][1])
+
+        xa = np.array(xp)   # Liste wird in Datenfeld (array) umgewandelt
+        ya = np.array(yp)
+
+        def func(xa, a, b, c):
+            return a*np.exp(-b*0.01*xa)+c
+
+        erstVersuch =[-100,-1,1]
+
+        popt, pcov = curve_fit(func, xa, ya, erstVersuch)
+        print (popt)
+
+        a = popt[0]
+        b = popt[1]
+        c = popt[2]
+
+        x = -sb
+        punkt = []      # hier geht es um die einzelnen Punkte der Kurve
+        while x < sb:
+            y = a*np.exp(-b*0.01*x)+c  # Gleichung der Exponentialfunktion
+            punkt.append((x+ pva, -y + pha))
+            x += 5
+
+        self.zeichneFunktion(punkt)
+
+        a = round(a,3)
+        b = round((0.01*b),6)
+        c = round(c,0)
+
+        formel = "y = " + "{:+}".format(a) + "*exp(" + "{:+}".format(b) + "*x) " + "{:+}".format(c)
+        self.textAusgabe1.set_text(formel)
+
+        self.drawArea.queue_draw()
+
 
     def linio(self, x1, y1, x2, y2):
         self.cr.move_to(x1, y1)

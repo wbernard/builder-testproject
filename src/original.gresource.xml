@@ -2,5 +2,18 @@
 <gresources>
   <gresource prefix="/im/bernard/original">
     <file>window.ui</file>
-  </gresource>
+
+    <!-- bildsimboloj por la variaj funkcioj -->
+    <file>icons/axes-four-quadrants-symbolic.svg</file>
+    <file>icons/axes-one-quadrant-symbolic.svg</file>
+    <file>icons/function-linear-symbolic.svg</file>
+    <file>icons/function-parable-horizontal-symbolic.svg</file>
+    <file>icons/function-parable-symbolic.svg</file>
+    <file>icons/function-third-order-horizontal-symbolic.svg</file>
+    <file>icons/function-third-order-symbolic.svg</file>
+    <file>icons/info-symbolic.svg</file>
+    <file>icons/im.bernard.Funkcio-symbolic.svg</file>
+    <file>icons/im.bernard.Funkcio.svg</file>
+
+      </gresource>
 </gresources>

@@ -95,8 +95,8 @@
   </object>
   <template class="OriginalWindow" parent="GtkApplicationWindow">
     <property name="can-focus">False</property>
-    <property name="default-width">600</property>
-    <property name="default-height">300</property>
+    <property name="default-width">800</property>
+    <property name="default-height">600</property>
     <child>
       <object class="GtkBox" id="dieBox">
         <property name="visible">True</property>
@@ -211,7 +211,7 @@
               <object class="GtkImage">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="icon-name">edit-undo-symbolic</property>
+                <property name="icon-name">function-parable-symbolic</property>
               </object>
             </child>
           </object>
@@ -230,7 +230,7 @@
               <object class="GtkImage">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="icon-name">edit-undo-symbolic</property>
+                <property name="icon-name">function-third-order-symbolic</property>
               </object>
             </child>
           </object>
@@ -249,7 +249,7 @@
               <object class="GtkImage">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="icon-name">edit-undo-symbolic</property>
+                <property name="icon-name">function-parable-horizontal-symbolic</property>
               </object>
             </child>
           </object>
@@ -267,7 +267,7 @@
               <object class="GtkImage">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="icon-name">edit-undo-symbolic</property>
+                <property name="icon-name">function-third-order-horizontal-symbolic</property>
               </object>
             </child>
           </object>
@@ -286,7 +286,7 @@
               <object class="GtkImage">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="icon-name">edit-undo-symbolic</property>
+                <property name="icon-name">function-linear-symbolic</property>
               </object>
             </child>
           </object>
@@ -325,6 +325,25 @@
           <packing>
             <property name="pack-type">end</property>
             <property name="position">8</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="exponential">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+            <property name="tooltip-text" translatable="yes">Exponentialkurve</property>
+            <signal name="clicked" handler="zeichneExpoKurve" swapped="no"/>
+            <child>
+              <object class="GtkImage">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="icon-name">function-parable-symbolic</property>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="position">10</property>
           </packing>
         </child>
       </object>
