@@ -19,9 +19,10 @@
 # Python Imports
 import cairo
 import math
-import os, threading, time, datetime
+import os, threading, time, datetime, sys
 import numpy as np
 from scipy.optimize import curve_fit
+import random
 
 # Gtk Imports
 
@@ -48,18 +49,7 @@ class OriginalWindow(Gtk.ApplicationWindow):
     drawArea      = Gtk.Template.Child()
     messageLabel  = Gtk.Template.Child()
     messageWidget = Gtk.Template.Child()
-    textAusgabe   = Gtk.Template.Child()
-    textAusgabe1  = Gtk.Template.Child()
-    gerade        = Gtk.Template.Child()
-    parabel       = Gtk.Template.Child()
-    kurve3o       = Gtk.Template.Child()
-    parabelHor    = Gtk.Template.Child()
-    kurve3hor     = Gtk.Template.Child()
-    neustart      = Gtk.Template.Child()
-    quadranten1   = Gtk.Template.Child()
-    quadranten2   = Gtk.Template.Child()
     menuKnopf     = Gtk.Template.Child()
-    exponential   = Gtk.Template.Child()
 
 
     def __init__(self, **kwargs):
@@ -69,66 +59,25 @@ class OriginalWindow(Gtk.ApplicationWindow):
 
         self.drawArea.connect('draw', self.onDraw)
         self.drawArea.connect('configure-event', self.onConfigure)
-        self.drawArea.connect("motion-notify-event", self.zeigeKoord)
-        self.drawArea.connect('button-press-event', self.holePunkt)
-        self.gerade.connect('clicked', self.zeichneGerade)
-        self.parabel.connect('clicked', self.zeichneParabel)
-        self.kurve3o.connect('clicked', self.zeichneKurve3_O)
-        self.parabelHor.connect('clicked', self.zeichneParabelHor)
-        self.kurve3hor.connect('clicked', self.zeichneKurve3_OHor)
-        self.neustart.connect('clicked', self.neuStart)
-        self.quadranten1.connect('clicked', self.einVierQuad, "1")
-        self.quadranten2.connect('clicked', self.einVierQuad, "2")
-        self.exponential.connect('clicked', self.zeichneExpoKurve)
+        self.drawArea.connect('button-press-event', self.posDisk)
 
-        self.linfarb     = [[0,0,0.5], [0.5,0,0.5],[0,0.5,0.5], [0.5,0,0], [0.5,0.5,0], [0,1,0], [0,1,0] ]
-        self.zeichneneu  = True
-        self.quadra      = 8
-        self.typ         = 0
+
+        self.linfarb     = [[0.1,0.37,0.71], [0.38,0.21,0.51],[0.15,0.64,0.41], [0.65,0.11,0.18], [0.39,0.27,0.17], [1, 0, 0.17], [0.39, 0, 1]]
         self.surface     = None
         self.aktBreite   = 0
         self.aktHoehe    = 0
-        self.crFarbe     = [1.0, 0.0, 0.0, 1.0]
-        self.crDicke     = 4
-        self.punkte      = []
+        self.crFarbe     = [0.88, 0.11, 0.14, 1.0]
+        self.zeichneneu  = True
+        self.schlange    = []
+        self.xkopf       = random.randint(20, 480)
+        self.ykopf       = random.randint(20, 380)
+        self.richtung    = 0          # 0 = rechts  1 = rauf  2 = links   3 = runter
+        self.spielBeginn = True
+        self.diskZuPos   = True
+        self.zeigeAnw    = True
 
-        self.quadranten1.set_active(True)
-        self.quadranten2.set_active(False)
 
-        self.success    = "#88cc27"
-        self.warning    = "#ffa800"
-        self.error      = "#ff0000"
-
-    def einVierQuad(self, widget, name):
-        if name == "1":
-            self.quadra = 8
-            print ("Hallo 1")
-            self.zeichneneu    = True
-            self.onDraw(self.drawArea, self.cr)
-            self.drawArea.queue_draw()
-
-        elif name == "2":
-            self.quadra = 2
-            print ("Hallo 2")
-            self.zeichneneu    = True
-            self.onDraw(self.drawArea, self.cr)
-            self.drawArea.queue_draw()
-
-        else:
-            print ("Da stimmt etwas nicht!")
-
-    def vierEinQuad(self, widget):
-        if self.quadranten2.get_active() and not self.quadranten1.get_active():
-            pass
-        else:
-            self.quadranten2.set_active(True)
-            self.quadranten1.set_active(False)
-            if self.quadra != 2:
-                self.quadra = 2
-            self.zeichneneu    = True
-            self.onDraw(self.drawArea, self.cr)
-            self.drawArea.queue_draw()
-
+        self.warning    = "#00008b"
 
     def onConfigure(self, area, eve, data = None): # wird bei Änderung des Fensters aufgerufen
         ab = area.get_allocated_width()   #liest die aktuellen Abmessungen des Fensters ein
@@ -158,7 +107,6 @@ class OriginalWindow(Gtk.ApplicationWindow):
 
             self.zeichneneu    = True     # d.h. dass in onDraw die Zeichenfläche neu gezeichnet wird
 
-
         else:
             self.drawArea.set_size_request(self.aktBreite, self.aktHoehe)
 
@@ -170,377 +118,160 @@ class OriginalWindow(Gtk.ApplicationWindow):
     def onDraw(self, area, cr):    # area ist das Fenster  cr ist ein context
         ab = area.get_allocated_width()   # liest die aktuellen Abmessungen des Fensters ein
         ah = area.get_allocated_height()
-
+        print ("draw 118")
         if self.surface is not None:
-            cr.set_source_surface(self.surface, 0.0, 0.0)
-            cr.paint()
             global sb, sh
-            sb = self.surface.get_width()
-            sh = self.surface.get_height()
+            cr.set_source_surface(self.surface, 0.0, 0.0)
+            #cr.set_source_rgb(0, 0, 0)   # setzt die Farbe der Fläche
+            cr.paint()
+            print ("draw 123")
+            #self.drawArea.queue_draw()
 
-            #print ("ab", ab, ah)
-            #print ("sb", sb, sh)
+            sb = self.surface.get_width()   # Breite der Zeichenebene
+            sh = self.surface.get_height()  # Höhe der Zeichenebene
+
             # bei Verkleinerung bleibt die alte Ebene
             if ab < sb and ah < sh:
                 return False
 
+            if self.zeichneneu:
 
-            if self.zeichneneu and self.quadra != 0:
-                global pva, pha
-                pva = sb/self.quadra
-                pha = sh - sh/self.quadra
-                print ("1pva =", pva, "pha =", pha)
+                if self.zeigeAnw:
+                    self.zeigeAnweisung(self.warning, _("Klicke auf einen Punkt! \n Dort wird dann der Apfel liegen und das Spiel beginnt!"))
+                    self.zeigeAnw = False
+                else:
+                    pass
 
-                self.cr.rectangle(0, 0, sb, sh)  # x, y, width, height
-                self.cr.set_operator(0);
-                self.cr.fill()
+                self.bereiteEbene()
 
-                self.zeichneAchsen(pva, pha)
+                if self.diskZuPos == False:
+                    rgba = self.crFarbe
+                    print ("disko", xd)
+                    self.zeichneDisk(xd, yd, rgba)
 
-                #print ("Punkte", self.punkte[:])
+                #if self.spielBeginn == False:
 
-                for p in self.punkte:
-                    x1 = p[0] + pva
-                    y1 = -p[1] + pha
-                    print ("pva =", pva, "pha =", pha)
-                    print ("Punkt", p, x1, y1)
-                    self.zeichnePunkt(x1, y1, pva, pha)
-
-                if self.typ != 0:
-                    #pva = sb/self.quadra      # Position der vertikalen/horizontalen Achse
-                    #pha = sh - sh/self.quadra
-                    self.berechneZeichne(pva, pha)
-
+                self.zeichneSchlange()
                 #self.drawArea.queue_draw()
 
                 self.zeichneneu = False
-
         else:
             print ("keine Zeichenebene !!")
 
-        return False
-
-
-    def zeigeKoord (self, area, eve):
-        if self.quadra == 2 or self.quadra == 8:   # vier oder ein Quadranten
-            (x1, y1) = eve.x, eve.y
-            #global pva, pha         # Position der vertikalen/horizontalen Achse
-            pva = sb/self.quadra
-            pha = sh - sh/self.quadra
-            x = int(x1-pva)         # x und y sind die Koordinaten im Aschsenkreuz der Zeichenebene
-            y = int(-y1+pha)
-
-            koord = "  x  " + str(x) + ", y  " + str(y)
-            self.textAusgabe.set_text(koord)
-        else:
-            self.displayMessage(self.error, "Da ist etwas faul!")
-
-    def holePunkt(self, area, eve):
-        x1 = eve.x
-        y1 = eve.y
-
-        x = int(x1- pva)         # x und y sind die Koordinaten im Aschsenkreuz der Zeichenebene
-        y = int(-y1+pha)
-        print("(" + str(x) + ", " + str(y) + ")")
-
-        self.zeichnePunkt(x1,y1,pva,pha)
-
-        self.drawArea.queue_draw()
-
-    def zeichneAchsen(self, pva, pha):
-        self.cr.set_operator(1)
-        self.linio(0, pha, sb, pha) # zeichnet die horizontale Achse
-        self.linio(pva, 0, pva, sh)
-
-    def neuStart(self, widget):
-
-        sb = self.surface.get_width()
-        sh = self.surface.get_height()
-        self.cr.rectangle(0, 0, sb, sh)  # x, y, width, height
-        self.cr.set_operator(0);
-        self.cr.fill()
-
-        self.zeichneAchsen(pva, pha)
-        '''self.cr.set_operator(1)
-        self.linio(0, pha, sb, pha) # zeichnet die horizontale Achse
-        self.linio(pva, 0, pva, sh)'''
-
-        self.textAusgabe1.set_text("")
-        self.drawArea.queue_draw()
-
-        del self.punkte[:]
-        #self.quadra = 8
-        self.typ = 0
-
-
-    def zeichnePunkt(self,x1,y1,pva,pha):
-        rgba = self.crFarbe
-        self.cr.set_source_rgba(rgba[0], rgba[1], rgba[2], rgba[3])
-        self.cr.set_line_width(self.crDicke)
+    def zeichneDisk(self, x1, y1, farb):
+        #print ("zeichnen")
+        self.cr.set_source_rgba(farb[0], farb[1], farb[2], farb[3])
+        self.cr.set_line_width(3)
         self.cr.set_line_cap(1) # Linienende 0 = BUTT, 1 = rund  2 = eckig
 
-        self.cr.arc(x1, y1, 3, 0, 2*math.pi)
+        self.cr.arc(x1, y1, 10, 0, 2*math.pi)
         self.cr.fill()
 
-        self.cr.set_source_rgba(0, 0, 0, 1)
-        self.cr.select_font_face("sans-serif", cairo.FONT_SLANT_NORMAL,
-                cairo.FONT_WEIGHT_NORMAL)
-        self.cr.move_to(x1+5, y1)
-        self.cr.set_font_size(12)
-        x = int(x1 - pva)         # x und y sind die Koordinaten im Aschsenkreuz der Zeichenebene
-        y = int(-y1 + pha)
-        print ("2 pva pha", pva, pha)
-        print ("ja", x, y)
-        self.cr.show_text(str(x) + ", " + str(y))
+    def zeichneSchlange(self):
+        kopf = True
+        for disk in self.schlange:
+            x = disk[0]
+            y = disk[1]
+            if kopf:   # der Kopf
+                rgba = (0, 0.2, 1, 1)
+                self.zeichneDisk(x, y, rgba)
+                #self.drawArea.queue_draw()
+                kopf = False
+            else:
+                rgba = (0, 1, 0, 1)
+                self.zeichneDisk(x, y, rgba)
+                #self.drawArea.queue_draw()
 
-        #self.drawArea.queue_draw()
+    def bewegeSchlange(self, rtg):
+        n = 0
+        while self.schlange[0][0] <= (sb-20):
+            #self.drawArea.queue_draw()
+            ng = len(self.schlange)-1
+            for i in range(1,len(self.schlange)):
+                self.schlange[ng] = self.schlange[ng-1].copy()
+                ng -= 1
 
-        if self.zeichneneu == False:   # wenn es nicht eine Anpassung der Zeichenfläche ist
-            self.punkte.append([x, y])
+            if rtg == 0:
+                self.schlange[0][0] += 20
+            if rtg == 1:
+                self.schlange[0][1] -= 20
+            if rtg == 2:
+                self.schlange[0][0] -= 20
+            if rtg == 3:
+                self.schlange[0][1] += 20
 
-    def berechneZeichne(self, pva, pha):
+            self.zeichneneu = True
+            #self.bereiteEbene()
+            #rgba = self.crFarbe
+            #self.zeichneDisk(xd, yd, rgba)
+            #self.zeichneSchlange()
+            self.onDraw(self.drawArea, self.cr)
+            #self.drawArea.queue_draw()
+            n += 1
 
-        n = len(self.punkte)
-        print (n)
-        xp = []
-        yp = []
+            print ("uno", n, self.schlange)
+            time.sleep(0.3)
 
-        for i in range(n):
-            xp.append(self.punkte[i][0])
-            yp.append(self.punkte[i][1])
+    def bereiteEbene(self):
+        self.cr.rectangle(0, 0, sb, sh)  # x, y, Breite, Höhe
+        self.cr.set_operator(0)
+        self.cr.fill()
+        self.cr.set_operator(1)
 
-        xa = np.array(xp)   # Liste wird in Datenfeld (array) umgewandelt
-        ya = np.array(yp)
-
-        # fit gibt die Faktoren der Kurvengleichung aus
-        if self.typ == 5:
-            fit = np.polyfit(ya,xa,2)  # horizonzale Parabel vertauscht x und y Werte
-            #print (fit)
-        elif self.typ == 6:
-            fit = np.polyfit(ya,xa,3)  # horizonzale Kurve vertauscht x und y Werte
-            #print (fit)
+    def posDisk(self, area, eve):  # positioniert den Apfel
+        if self.diskZuPos == True:
+            global xd, yd
+            xd = int(eve.x)
+            yd = int(eve.y)
+            rgba = self.crFarbe
+            #print ("disko", xd)
+            self.zeichneDisk(xd, yd, rgba)
+            #time.sleep(1)
+            self.diskZuPos = False
         else:
-            fit = np.polyfit(xa,ya, self.typ)
-
-        if self.typ == 1:
-            af = fit[0]
-            bf = fit[1]
-
-            x = -sb
-            punkt = []      # hier geht es um die einzelnen Punkte der Kurve
-            while x < sb:
-                y = af*x + bf   # Geradengleichnung y = a*x + b
-                punkt.append((x+ pva, -y + pha))
-                x += 1
-
-            self.zeichneFunktion(punkt)
-
-            a = round(af,3)
-            b = round(bf,0)
-            formel = "y = " + "{:+}".format(a) + "x " + "{:+}".format(b)
-
-        elif self.typ == 2:
-            af = fit[0]
-            bf = fit[1]
-            cf = fit[2]
-
-            x = -sb
-            punkt = []      # hier geht es um die einzelnen Punkte der Kurve
-            while x < sb:
-                y = af*x**2 + bf*x + cf   # Gleichung der Parabel
-                punkt.append((x+ pva, -y + pha))
-                x += 1
-
-            self.zeichneFunktion(punkt)
-
-            a = round(af,5)
-            b = round(bf,4)
-            c = round(cf,0)
-
-            formel = "y = " + "{:+}".format(a) + "x²  " + "{:+}".format(b)+ "x  " + "{:+}".format(c)
-
-        elif self.typ == 3:
-            af = fit[0]
-            bf = fit[1]
-            cf = fit[2]
-            df = fit[3]
-
-            x = -sb
-            punkt = []      # hier geht es um die einzelnen Punkte der Kurve
-            while x < sb:
-                y = af*x**3 + bf*x**2 + cf*x + df  # Gleichung der Funkion 3.Ordnung
-                punkt.append((x+ pva, -y + pha))
-                x += 1
-
-            self.zeichneFunktion(punkt)
-
-            a = round(af,6)
-            b = round(bf,4)
-            c = round(cf,2)
-            d = round(df,0)
-
-            formel = "y = " + "{:+}".format(a) + "x³ " + "{:+}".format(b)+ "x² " + "{:+}".format(c)+ "x " + "{:+}".format(d)
-
-        elif self.typ == 5:
-            af = fit[0]
-            bf = fit[1]
-            cf = fit[2]
-
-            x = -sb
-            punkt = []      # hier geht es um die einzelnen Punkte der Kurve
-            while x < sb:
-                y = af*x**2 + bf*x + cf   # Gleichung der horizontalen Parabel
-                punkt.append((y+ pva, -x + pha))
-                x += 1
-
-            self.zeichneFunktion(punkt)
-
-            a = round(af,5)
-            b = round(bf,4)
-            c = round(cf,0)
-
-            formel = "x = " + "{:+}".format(a) + "y² " + "{:+}".format(b)+ "y " + "{:+}".format(c)
-
-        elif self.typ == 6:
-            af = fit[0]
-            bf = fit[1]
-            cf = fit[2]
-            df = fit[3]
-
-            x = -sb
-            punkt = []      # hier geht es um die einzelnen Punkte der Kurve
-            while x < sb:
-                y = af*x**3 + bf*x**2 + cf*x + df  # Gleichung der Funkion 3.Ordnung
-                punkt.append((y+ pva, -x + pha))
-                x += 1
-
-            self.zeichneFunktion(punkt)
-
-            a = round(af,6)
-            b = round(bf,4)
-            c = round(cf,3)
-            d = round(df,0)
-
-            formel = "x = " + "{:+}".format(a) + "y³ " + "{:+}".format(b)+ "y² " + "{:+}".format(c)+ "y " + "{:+}".format(d)
-
-        self.textAusgabe1.set_text(formel)
+            pass
         self.drawArea.queue_draw()
+        self.zeichneneu = False
+        #time.sleep(1)
+        if self.spielBeginn:
+            self.posKopf()
+            self.posSchlange()
+        else:
+            pass
 
-    def zeichneFunktion(self,punkt):
+    def posKopf(self):   # positioniert den Kopf zufällig
+        self.xkopf       = random.randint(60, sb-20)
+        self.ykopf       = random.randint(20, sh-20)
+        if (abs(self.xkopf-xd) <= 20) or (abs(self.ykopf-yd) <= 20):
+            self.posKopf()
+        else:
+            pass
 
-        self.cr.move_to(*punkt[0])
-        for p in punkt[1:]:
-            self.cr.line_to(*p)
-
-        self.cr.set_line_width(2)
-        i = self.typ-1
-        f =self.linfarb
-        self.cr.set_source_rgb(f[i][0],f[i][1],f[i][2])
-        self.cr.stroke()
-
-    def zeichneGerade(self, widget):
-        self.typ = 1
-        print ("Gerade ", len(self.punkte), "Punkte")
-        if  len(self.punkte) < 2:
-            self.displayMessage(self.success, "Mindestens zwei Punkte!")
-        elif len(self.punkte) >= 2:
-            self.berechneZeichne(pva, pha)
-
-    def zeichneParabel(self, widget):
-        self.typ = 2
-        print ("Parabel ", len(self.punkte), "Punkte Quadranten", pva, pha)
-        if len(self.punkte) < 3:
-            self.displayMessage(self.success, "Mindestens drei Punkte!")
-        elif len(self.punkte) >= 3:
-            self.berechneZeichne(pva, pha)
-
-
-    def zeichneKurve3_O(self, widget):
-        self.typ = 3
-        print ("Kurve 3.Ordnung ", len(self.punkte), "Punkte")
-        if len(self.punkte) < 4:
-            self.displayMessage(self.success, "Mindestens vier Punkte!")
-        elif len(self.punkte) >= 4:
-            self.berechneZeichne(pva, pha)
-
-    def zeichneParabelHor(self, widget):
-        self.typ = 5
-        print ("Parabel horizontal ", len(self.punkte), "Punkte")
-        if len(self.punkte) < 3:
-            self.displayMessage(self.success, "Mindestens drei Punkte!")
-        elif len(self.punkte) >= 3:
-            self.berechneZeichne(pva, pha)
-
-    def zeichneKurve3_OHor(self, widget):
-        self.typ = 6
-        print ("Kurve 3.Ord.horizontal ", len(self.punkte), "Punkte")
-        if len(self.punkte) < 4:
-            self.displayMessage(self.success, "Mindestens vier Punkte!")
-        elif len(self.punkte) >= 4:
-            self.berechneZeichne(pva, pha)
-
-    def zeichneExpoKurve(self, widget):
-        self.typ = 7
-        n = len(self.punkte)
-        xp = []
-        yp = []
-
-        for i in range(n):
-            xp.append(self.punkte[i][0])
-            yp.append(self.punkte[i][1])
-
-        xa = np.array(xp)   # Liste wird in Datenfeld (array) umgewandelt
-        ya = np.array(yp)
-
-        def func(xa, a, b, c):
-            return a*np.exp(-b*0.01*xa)+c
-
-        erstVersuch =[-100,-1,1]
-
-        popt, pcov = curve_fit(func, xa, ya, erstVersuch)
-        print (popt)
-
-        a = popt[0]
-        b = popt[1]
-        c = popt[2]
-
-        x = -sb
-        punkt = []      # hier geht es um die einzelnen Punkte der Kurve
-        while x < sb:
-            y = a*np.exp(-b*0.01*x)+c  # Gleichung der Exponentialfunktion
-            punkt.append((x+ pva, -y + pha))
-            x += 5
-
-        self.zeichneFunktion(punkt)
-
-        a = round(a,3)
-        b = round((0.01*b),6)
-        c = round(c,0)
-
-        formel = "y = " + "{:+}".format(a) + "*exp(" + "{:+}".format(b) + "*x) " + "{:+}".format(c)
-        self.textAusgabe1.set_text(formel)
-
-        self.drawArea.queue_draw()
-
-
-    def linio(self, x1, y1, x2, y2):
-        self.cr.move_to(x1, y1)
-        self.cr.line_to(x2, y2)
-
-        self.cr.set_source_rgb(0, 0, 0)
-        self.cr.set_line_width(1.5)
-        self.cr.stroke()
+    def posSchlange(self):   # positioniert die Schlange am Beginn des Spiels
+        #ng = self.glieder
+        x1 = self.xkopf
+        y1 = self.ykopf
+        self.schlange = [[x1,y1],[x1-20, y1], [x1-40, y1]]
+        print (self.schlange)
+        self.zeichneSchlange()
+        self.spielBeginn = False
+        self.bewegeSchlange(self.richtung)
 
     def displayMessage(self, type, text):
         markup = "<span foreground='" + type + "'>" + text + "</span>"
         self.messageLabel.set_markup(markup)
         self.messageWidget.popup()
-        self.hideMessageTimed()
+        self.hideMessageTimed(1)
 
+    def zeigeAnweisung(self, type, text):
+        markup = "<span foreground='" + type + "'>" + text + "</span>"
+        self.messageLabel.set_markup(markup)
+        self.messageWidget.popup()
+        self.hideMessageTimed(1)
 
     @threaded
-    def hideMessageTimed(self):
-        time.sleep(1)
+    def hideMessageTimed(self,t):
+        time.sleep(t)
         GLib.idle_add(self.messageWidget.popdown)
 
 
