@@ -1,5 +1,2 @@
-lapack
-pybind11
-numpy
-scipy
+
 
