@@ -28,20 +28,24 @@ from gi.repository import GLib
 
 # Python Imports
 import cairo
-import time, datetime
+import os, threading, time, datetime
 import sys
 import random
-
 import math
-import os, threading
+
+def threaded(fn):
+    def wrapper(*args, **kwargs):
+        threading.Thread(target=fn, args=args, kwargs=kwargs).start()
+    return wrapper
 
 @Gtk.Template(resource_path='/im/bernard/original/window.ui')
-
 
 class OriginalWindow(Gtk.ApplicationWindow):
     __gtype_name__ = 'OriginalWindow'
 
     drawArea = Gtk.Template.Child()
+    messageLabel  = Gtk.Template.Child()
+    messageWidget = Gtk.Template.Child()
     anZeige  = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
@@ -59,7 +63,7 @@ class OriginalWindow(Gtk.ApplicationWindow):
         self.richtung    = 0         # 0 = rechts  1 = rauf  2 = links   3 = runter
         self.spielBeginn = True
         self.diskZuPos   = True
-        self.zeigeAnw    = True
+        #self.zeigeAnw    = True
         self.xd          = random.randint(-200, 200)  # Anfangsposition Apfel
         self.yd          = random.randint(-200, 200)
         self.treffer     = False
@@ -103,7 +107,6 @@ class OriginalWindow(Gtk.ApplicationWindow):
             else:
                 self.richtung += -1
 
-
     def draw(self, width, height):
 
         cr = self.cr
@@ -126,10 +129,8 @@ class OriginalWindow(Gtk.ApplicationWindow):
 
         #print (sb, sh)
 
-        ## Now, whatever is draw is "under the influence" of the
-        ## context and all that matrix magix we just did.
-
         if self.spielBeginn:
+            self.zeigeAnweisung(self.warning, _("Linksklick = nach links Rechtsklick = nach rechts \n Spiel beginnt in 3 Sekunden"))
             self.posSchlange(cr)
 
         ng = len(self.schlange)-1
@@ -146,16 +147,22 @@ class OriginalWindow(Gtk.ApplicationWindow):
         if self.richtung == 3:
             self.schlange[0][1] += 20
 
+        if self.spielBeginn:
+            time.sleep(5)
+
         self.zeichneSchlange(cr)
         time.sleep(self.warte)
 
         #cr.restore()
 
         kopf = self.schlange[0]
-        if abs(kopf[0]) >= sb/2 or abs(kopf[1]) >= sh/2:
-            print (kopf[0], width/2)
+        if abs(kopf[0]) >= sb/2-25 or abs(kopf[1]) >= sh/2-25:
+            #print (kopf[0], width/2)
             #cr.restore()
-            self.drawArea.queue_draw()
+            #self.drawArea.queue_draw()
+            rgba = (0, 1, 1, 1)
+            self.zeichneDisk(0, 0, rgba, cr)
+            #time.sleep(5)
             self.spielEnde(self.punkte, self.drawArea, cr)
 
         ax = abs(self.xd - kopf[0])
@@ -166,14 +173,16 @@ class OriginalWindow(Gtk.ApplicationWindow):
             self.punkte += 1
             self.warte = self.warte*0.8
             self.schlange.append([500,200])   # man kann einen beliebigen Punkt anhängen, es wird sowieso der Wert des vorangehenden hineinkopiert
-            print (self.schlange)
+            #print (self.schlange)
+            punktausgabe = "Punkte: " + str(self.punkte)
+            self.anZeige.set_text(punktausgabe)
             print ("Punkte:", self.punkte, "warte", self.warte)
         if self.treffer == True:
-            self.xd          = random.randint(int(-sb/2+30), int(sh/2-30))  # neue Anfangsposition Apfel
-            self.yd          = random.randint(int(-sh/2+30), int(sh/2-30))
+            self.xd          = random.randint(int(-sb/2+60), int(sh/2-60))  # neue Anfangsposition Apfel
+            self.yd          = random.randint(int(-sh/2+100), int(sh/2-60))
             rgba =(1, 0, 0, 1)
             self.zeichneDisk(self.xd, self.yd, rgba, cr)
-            #cr.restore()
+            print ("disko",sb, self.xd)
             self.treffer = False
         else:
             rgba =(1, 0, 0, 1)
@@ -200,17 +209,12 @@ class OriginalWindow(Gtk.ApplicationWindow):
                 self.zeichneDisk(x, y, rgba, cr)
                 #self.drawArea.queue_draw()
 
-    def spielEnde(self, pkt, wid, cr):
-        cr.set_source_rgba(1, 0, 1, 1)
-        cr.select_font_face("Courier", cairo.FONT_SLANT_NORMAL,
-        cairo.FONT_WEIGHT_BOLD)
-        cr.set_font_size(60)
+    def spielEnde(self, pkt, drawArea, cr):
         print ("Du hast das Spiel mit ", pkt, "Punkten beendet!")
-        #self.zeigeAnweisung(self.warning, ("Du bist aus dem Feld gekrochen!"))
-
-        rgba = (1, 0, 1, 1)
-        self.zeichneDisk(100, 100, rgba, cr)
-        cr.show_text("Bravo!")
+        rgba = (0, 1, 1, 1)
+        self.zeichneDisk(0, 0, rgba, cr)
+        endergebnis = "Spiel beendet mit " + str(self.punkte) + " Punkten."
+        self.anZeige.set_text(endergebnis)
         time.sleep(2)
 
         sys.exit("Du bist aus dem Feld gekrochen!")
@@ -227,12 +231,18 @@ class OriginalWindow(Gtk.ApplicationWindow):
         markup = "<span foreground='" + type + "'>" + text + "</span>"
         self.messageLabel.set_markup(markup)
         self.messageWidget.popup()
-        self.hideMessageTimed(1)
+        self.hideMessageTimed(5)
 
     def zeigeAnweisung(self, type, text):
         markup = "<span foreground='" + type + "'>" + text + "</span>"
         self.messageLabel.set_markup(markup)
         self.messageWidget.popup()
-        self.hideMessageTimed(1)
+        self.hideMessageTimed(12)
+
+    @threaded
+    def hideMessageTimed(self,t):
+        time.sleep(t)
+        GLib.idle_add(self.messageWidget.popdown)
+
 
     
