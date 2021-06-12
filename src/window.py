@@ -47,6 +47,7 @@ class OriginalWindow(Gtk.ApplicationWindow):
     messageLabel  = Gtk.Template.Child()
     messageWidget = Gtk.Template.Child()
     anZeige  = Gtk.Template.Child()
+    nivelo  = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -70,8 +71,9 @@ class OriginalWindow(Gtk.ApplicationWindow):
         self.punkte      = 0
         self.nachLinks   = False
         self.nachRechts  = False
-        self.zeitStart  = time.time()
-        self.warte      = 0.2
+        self.zeitStart   = time.time()
+        self.warte       = 0.2
+        self.level       = 0
 
         self.warning    = "#00008b"
 
@@ -171,11 +173,15 @@ class OriginalWindow(Gtk.ApplicationWindow):
         if ax < 20 and ay < 20:
             self.treffer = True
             self.punkte += 1
-            self.warte = self.warte*0.8
+            self.level = int(self.punkte/4)
+            if self.level >= 1:
+                self.warte = self.warte/(1+self.level/25)
             self.schlange.append([500,200])   # man kann einen beliebigen Punkt anhängen, es wird sowieso der Wert des vorangehenden hineinkopiert
             #print (self.schlange)
             punktausgabe = "Punkte: " + str(self.punkte)
+            levelausgabe = "Level:  " + str(self.level)
             self.anZeige.set_text(punktausgabe)
+            self.nivelo.set_text(levelausgabe)
             print ("Punkte:", self.punkte, "warte", self.warte)
         if self.treffer == True:
             self.xd          = random.randint(int(-sb/2+60), int(sh/2-60))  # neue Anfangsposition Apfel
@@ -210,7 +216,7 @@ class OriginalWindow(Gtk.ApplicationWindow):
                 #self.drawArea.queue_draw()
 
     def spielEnde(self, pkt, drawArea, cr):
-        print ("Du hast das Spiel mit ", pkt, "Punkten beendet!")
+        print ("Du hast das Spiel mit ", pkt, "Punkten auf Level: ", self.level, "beendet!")
         rgba = (0, 1, 1, 1)
         self.zeichneDisk(0, 0, rgba, cr)
         endergebnis = "Spiel beendet mit " + str(self.punkte) + " Punkten."
